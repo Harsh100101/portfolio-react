@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { FiGithub, FiLinkedin, FiMail, FiArrowDown } from 'react-icons/fi'
 import { SiReact, SiExpo, SiRedux, SiTypescript, SiNodedotjs, SiPython } from 'react-icons/si'
-import { createDraggable, createSpring } from 'animejs'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import MagneticButton from '@/components/animations/MagneticButton'
@@ -60,44 +59,33 @@ const ORBIT_ICONS = [
 ]
 
 function OrbitIcon({ Icon, color, label, x, y, delay }) {
-  const dragRef = useRef(null)
-
-  useEffect(() => {
-    if (!dragRef.current) return
-
-    // Real spring-physics draggable — grab an icon, fling it, watch it
-    // snap back to its orbit position with a bouncy spring release.
-    const draggable = createDraggable(dragRef.current, {
-      container: [-60, 60, -60, 60], // constrain drag range in px from origin
-      releaseEase: createSpring({ stiffness: 200, damping: 12, mass: 1 }),
-      onGrab: () => {
-        dragRef.current.style.zIndex = 20
-      },
-      onRelease: () => {
-        setTimeout(() => {
-          if (dragRef.current) dragRef.current.style.zIndex = ''
-        }, 400)
-      },
-    })
-
-    return () => draggable.revert?.()
-  }, [])
-
   return (
     <motion.div
       className="absolute"
-      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
+      style={{ left: `${x}%`, top: `${y}%`, x: '-50%', y: '-50%' }}
       animate={{ rotate: [0, 360] }}
       transition={{ duration: 24, repeat: Infinity, ease: 'linear', delay }}
     >
-      <div
-        ref={dragRef}
-        className="glass rounded-xl w-10 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-125 transition-transform duration-200"
+      {/*
+        Drag lives on this inner element, counter-rotated relative to the
+        orbit spin so grabbing feels natural. Framer Motion owns BOTH the
+        orbit rotation (on the parent) and the drag physics (here) — no
+        second animation library fighting over the same transform.
+      */}
+      <motion.div
+        drag
+        dragConstraints={{ top: -50, bottom: 50, left: -50, right: 50 }}
+        dragElastic={0.35}
+        dragSnapToOrigin
+        dragTransition={{ bounceStiffness: 400, bounceDamping: 18 }}
+        whileDrag={{ scale: 1.3, zIndex: 20 }}
+        whileHover={{ scale: 1.25 }}
+        className="glass rounded-xl w-10 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing"
         title={label}
         data-cursor="hover"
       >
         <Icon size={18} style={{ color }} />
-      </div>
+      </motion.div>
     </motion.div>
   )
 }
